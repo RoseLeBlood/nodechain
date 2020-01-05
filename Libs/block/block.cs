@@ -1,15 +1,29 @@
-using System;
+using System;  
+using System.Text;  
+using System.Security.Cryptography;
+using nodechain;
 
 namespace nodechain {
-    class BlockObject  {
-        
-
+    class Utils  {
+        public static string ComputeSha256Hash(string rawData)  
+        {  
+            // Create a SHA256   
+            using (SHA256 sha256Hash = SHA256.Create())  
+            {  
+                // ComputeHash - returns byte array  
+                byte[] bytes = sha256Hash.ComputeHash(Encoding.UTF8.GetBytes(rawData));  
+  
+                // Convert byte array to a string   
+                StringBuilder builder = new StringBuilder();  
+                for (int i = 0; i < bytes.Length; i++)  
+                {  
+                    builder.Append(bytes[i].ToString("x2"));  
+                }  
+                return builder.ToString();  
+            }  
+        } //
+        public static string ComputeSha256Hash(BinaryNodeChain node) {
+            return "NO_HASH";
+        }
     }
 }
-/* constructor(index, previousHash, timestamp, data, hash) {
-        this.index = index;
-        this.previousHash = previousHash.toString();
-        this.timestamp = timestamp;
-        this.data = data;
-        this.hash = hash.toString();
-    }*/

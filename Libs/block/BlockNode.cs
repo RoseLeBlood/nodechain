@@ -4,44 +4,60 @@ using System.Text;
 using System.Collections.Generic;
 using node;
 
-namespace nodechain { //// 0: root, 1: left, 2:right
+namespace nodechain { //// 0: root, 1: Child, 2:Sibling
 
-    /*public class GenericNodeChainBlock<T> {
-        public long Index { get; protected set; }
-        public long TimeStamp { get; protected set; }
-        public String Hash { get; protected set; }
-        public T Data { get; protected set; }
+    public class GenericNodeChainBlock {
+        private static ulong m_index = 0;
 
-        /*public GenericNodeChainBlock(ListNode<T> root)
-            : this(root.Name, root.Data) {
-        }*/
-       /* public GenericNodeChainBlock(long timeStamp, T data) { }
+        public string Name { get; set; } //
 
+        public ulong Index { get; internal set; } //
+        public long TimeStamp { get; internal set; } 
+        public String Hash { get; internal set; } //
+        public String prevHash { get; internal set; } //
+        public Object Data { get; internal set; } //
 
-        public static implicit operator GenericNodeChainBlock<T>(BinaryTreeNode<T> node)
+        public GenericNodeChainBlock(ListNode<Object> root)
+            : this(root.Name, root.Data)
         {
-            var _ret =  new GenericNodeChainBlock<T>();
+        }
+        public GenericNodeChainBlock(string name, Object data)
+        {
+            Name = name;
+            Data = data;
+            Index = m_index++;
+            //TODO!!
+        }
 
-            return _ret;
+
+        public static implicit operator GenericNodeChainBlock(BinaryNodeChain node)
+        {
+            return new GenericNodeChainBlock(node.Name, node.Data);
+        }
+        public void calc_hash() {
+
         }
     }
-    public abstract class BinaryNodeChain<T> : Node<T, BinaryNodeChain<T>>, IEnumerator<T>, IList<GenericNodeChainBlock<T>> {
-        internal bool m_now = false;
-
+    [Serializable]
+	public class BinaryNodeChain : Node<GenericNodeChainBlock, BinaryNodeChain>, IEnumerable<Object>, IList<GenericNodeChainBlock>
+	{
         public int Count {
             get { return this.ToList().Count; }
         }
-        public GenericNodeChainBlock<T> this[int index] {
+        public GenericNodeChainBlock this[int index] {
             get { return _ToList()[index]; }
-            set { }
+            set { throw new System.NotImplementedException(); }
         }
-        public bool IsReadOnly  {
+        public bool IsReadOnly {
             get { return false; }
         }
-        public int Depth {
-            get {
+
+        public int Depth
+        {
+            get
+            {
                 int depth = 0;
-                BinaryTreeNode<T> node = this;
+                BinaryNodeChain node = this;
                 while(node.Parent != null)
                 {
                     node = node.Parent;
@@ -50,123 +66,310 @@ namespace nodechain { //// 0: root, 1: left, 2:right
                 return depth;
             }
         }
-        public override BinaryNodeChain<T> Root {
-            get {
+
+		public override BinaryNodeChain Root
+        {
+            get
+            {
                 if (m_nodes [0] == null)
                     return this;
                 else
                     return m_nodes [0].Root;
             }
-            protected set { }
+            protected set
+            {
+            }
 		}
-        public BinaryNodeChain<T> Parent 
+        public BinaryNodeChain Parent 
         {
             get { return m_nodes[0]; }
             set { m_nodes[0] = value; }
         }
-		public BinaryNodeChain<T> Sibling 
+		public BinaryNodeChain Sibling 
 		{
 			get { return m_nodes[2]; }
 		}
-		public BinaryNodeChain<T> Child
+		public BinaryNodeChain Child
 		{
 			get { return m_nodes[1]; }
 		}
 
         public BinaryNodeChain() { }
 
-		public BinaryNodeChain (string name) // 0: root, 1: Child, 2:Sibling
+		public BinaryNodeChain (string name)
 			: base(name, 3)  { }
 
-		public BinaryNodeChain (string name, T data)
+		public BinaryNodeChain (string name, GenericNodeChainBlock data)
 			: base(name, data, 3) { }
 
+		public override BinaryNodeChain getNode(string hash) {
+			if (m_data.Hash == hash)
+				return this;
+
+			if (m_nodes[1] != null)
+				return m_nodes[1].getNode (hash);
+			if (m_nodes[2] != null)
+				return m_nodes[2].getNode (hash);
+
+			return null;
+		}
+		public override BinaryNodeChain setNode(BinaryNodeChain node) {
+            if (m_nodes[1] == null)  {
+                node.Parent = this;
+                node.Data.prevHash = Data.Hash;
+                node.Data.Hash = Utils.ComputeSha256Hash(node);
+                m_nodes[1] = node;
+
+            }
+            else
+                m_nodes[1].setNode (node);
+
+			return this;
+		}
+        public virtual BinaryNodeChain setChild(BinaryNodeChain node) {
+            if (m_nodes[2] == null)  {
+                node.Parent = this;
+                node.Data.prevHash = Data.Hash;
+                node.Data.Hash = Utils.ComputeSha256Hash(node);
+                m_nodes[2] = node;
+            }
+            else
+                m_nodes[2].setNode (node);
+
+            return this;
+        }
+
+		public override BinaryNodeChain removeNode(BinaryNodeChain node, ref bool removed) {
+			return this;
+		}
+		public override BinaryNodeChain removeNode(string name, ref bool removed)
+		{
+			return this;
+		}
+		protected override void Dispose (bool disposing)
+		{
+			base.Dispose (disposing);
+
+			if (disposing) 
+			{
+				if (m_nodes[1] != null) 
+				{
+					m_nodes[1].Dispose (disposing);
+				}
+				if (m_nodes[2] != null) 
+				{
+					m_nodes[2].Dispose (disposing);
+				}
+			}
+		}
+
+        public override void Travers(TraversOrder order, funcTravers travers, BinaryNodeChain root)
+        {
+
+            if (travers == null)
+                throw new ArgumentNullException("travers");
+
+          
+            switch (order)
+            {
+                case TraversOrder.Inorder:
+                    if (root != null)
+                    {
+                        Travers(order, travers, root.m_nodes [1]);
+                        travers(root);
+                        Travers(order, travers, root.m_nodes [2]);
+                    }
+                    break;
+                case TraversOrder.Postorder:
+                    if (root != null)
+                    {
+                        Travers(order, travers, root.m_nodes [1]);
+                        Travers(order, travers, root.m_nodes [2]);
+                        travers(root);
+                    }
+                    break;
+                case TraversOrder.Preorder:
+                    if (root != null)
+                    {
+                        travers(root);
+                        Travers(order, travers, root.m_nodes [1]);
+                        Travers(order, travers, root.m_nodes [2]);
+                    }
+                    break;
+            }
+        }
+        public override void Travers(TraversOrder order, BinaryNodeChain Root)
+        {
+            switch (order)
+            {
+                case TraversOrder.Inorder:
+                    if (Root != null)
+                    {
+                        Travers(order, Root.m_nodes[1]);
+                        Console.Write(Root.Data + " ");
+                        Travers(order, Root.m_nodes[2]);
+                    }
+                    break;
+                case TraversOrder.Postorder:
+                    if (Root != null)
+                    {
+                        Travers(order, Root.m_nodes[1]);
+                        Travers(order, Root.m_nodes[2]);
+                        Console.Write(Root.Data + " ");
+                    }
+                    break;
+                case TraversOrder.Preorder:
+                    if (Root != null)
+                    {
+                        Console.Write(Root.Data + " ");
+                        Travers(order, Root.m_nodes[1]);
+                        Travers(order, Root.m_nodes[2]);
+                    }
+                    break;
+            }
+        }
+        public virtual bool IsGreaterThan(BinaryNodeChain b)
+        {
+            if(m_nodes [1] == null)
+                return false;
+
+            Object _a = ((Object)m_nodes [1].Data);
+            Object _b = ((Object)b.Data);
+
+            if (_a.IsNumber() && _b.IsNumber())
+            {
+
+                return (Convert.ToDecimal(_a)) > (Convert.ToDecimal(_b));
+
+            }
+            return false;
+        }
+        public override List<GenericNodeChainBlock> ToList()
+        {
+            List<GenericNodeChainBlock> liste = new List<GenericNodeChainBlock>();
+
+            addToList(this, ref liste);
+            return liste;
+        }
+
+        protected void addToList(BinaryNodeChain root, ref List<GenericNodeChainBlock> liste)
+        {
+            if (root != null)
+            {
+                liste.Add(root.Data);
+                addToList(root.Child, ref liste);
+                addToList(root.Sibling, ref liste);
+            }
+        }
+        public static bool operator > (BinaryNodeChain a, BinaryNodeChain b)
+        {
+            return a.IsGreaterThan(b as BinaryNodeChain);
+        }
+        public static bool operator < (BinaryNodeChain a, BinaryNodeChain b)
+        {
+            return !a.IsGreaterThan(b as BinaryNodeChain);
+        }
+
+        public static implicit operator BinaryNodeChain(ListNode<GenericNodeChainBlock> node)
+        {
+            ListNode<GenericNodeChainBlock> _root = node;
+            BinaryNodeChain _new = new BinaryNodeChain();
+
+            do
+            {
+                _new.setNode(new BinaryNodeChain(node.Name, node.Data));
+                _root = _root.Next;
+            } while (_root != null);
+
+            return _new;
+        }
         #region IEnumerable implementation
         public System.Collections.IEnumerator GetEnumerator()
         {
             throw new System.NotImplementedException();
         }
-        private List<GenericNodeChainBlock<T>> _ToList() {
-            List<GenericNodeChainBlock<T>> liste = new List<GenericNodeChainBlock<T>>();
+        #endregion
+
+        #region IEnumerable implementation
+        private List<GenericNodeChainBlock> _ToList()
+        {
+            List<GenericNodeChainBlock> liste = new List<GenericNodeChainBlock>();
 
             _addToList(this, ref liste);
             return liste;
         }
-        private void _addToList(BinaryNodeChain<T> root, ref List<GenericNodeChainBlock<T>> liste)
+
+        private void _addToList(BinaryNodeChain root, ref List<GenericNodeChainBlock> liste)
         {
             if (root != null)
             {
-                liste.Add(new GenericNodeChainBlock<T>(root.Data));
+                liste.Add(new GenericNodeChainBlock(root.Name, root.Data));
                 _addToList(root.Child, ref liste);
                 _addToList(root.Sibling, ref liste);
             }
         }
-        IEnumerator<GenericNodeChainBlock<T>> IEnumerable<GenericNodeChainBlock<T>>.GetEnumerator()
+        IEnumerator<GenericNodeChainBlock> IEnumerable<GenericNodeChainBlock>.GetEnumerator()
         {
-            List<GenericNodeChainBlock<T>> list = Root._ToList();
+            List<GenericNodeChainBlock> list = Root._ToList();
             return list.GetEnumerator();
         }
         #endregion
 
         #region ICollection implementation
-        public void Add(GenericNodeChainBlock<T> item)
+        public void Add(GenericNodeChainBlock item)
         {
-            //setNode(new BinaryTreeNode<T>( item.Name, item.Data));
+            setNode(new BinaryNodeChain( item.Name, item));
+        }
+
+        public void Clear()
+        {
             throw new System.NotImplementedException();
         }
 
-        public void Clear() {
+        public bool Contains(GenericNodeChainBlock item)
+        {
+            return getNode(item.Name) != null;
+        }
+
+        public void CopyTo(GenericNodeChainBlock[] array, int arrayIndex)
+        {
             throw new System.NotImplementedException();
         }
 
-        public bool Contains(GenericNodeChainBlock<T> item) {
-            //return getNode(item.Hash) != null; 
-            return false;
+        public bool Remove(GenericNodeChainBlock item)
+        {
+            bool removed = false;
+            removeNode(item.Name, ref removed);
+            return removed;
         }
 
-        public void CopyTo(GenericNodeChainBlock<T>[] array, int arrayIndex) {
+
+        #endregion
+
+        #region IList implementation
+        public int IndexOf(GenericNodeChainBlock item)
+        {
             throw new System.NotImplementedException();
         }
 
-        public bool Remove(GenericNodeChainBlock<T> item) {
-            return false;
-        }
-
-        public int IndexOf(GenericNodeChainBlock<T> item) {
+        public void Insert(int index, GenericNodeChainBlock item)
+        {
             throw new System.NotImplementedException();
         }
 
-        public void Insert(int index, GenericNodeChainBlock<T> item) {
+        public void RemoveAt(int index)
+        {
             throw new System.NotImplementedException();
         }
 
-        public void RemoveAt(int index) {
-            throw new System.NotImplementedException();
-        }
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
+
+        #endregion  
+
+
+        IEnumerator<Object> IEnumerable<Object>.GetEnumerator()
         {
             return this.ToList().GetEnumerator();
         }
-
-        #endregion  
-        
-    }
-
-
-  /*  [Serializable]
-    public class BlockNode : BinaryNodeChain<Block> { 
-
-
-        public BlockNode (Block value) : base(name, value) { } 
-
-        public override bool IsGreaterThan(BinaryTreeNode b) {
-            if(m_nodes [1] == null)
-                return false;
-
-            Block _a = ((Block)m_nodes [1].Data);
-            Block _b = ((Block)b.Data);
-
-            return (_a != null && _b != null) ? _a > _b : false;
-        }
-    }*/
+       
+	}
 }
