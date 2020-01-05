@@ -1,0 +1,3 @@
+[submodule "Libs/libnode"]
+	path = Libs/libnode
+	url = https://github.com/RoseLeBlood/libnode.git
