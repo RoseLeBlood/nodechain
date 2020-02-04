@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    
+  <ItemGroup>
+    <ProjectReference Include="..\Libs\ASF.Node\ASF.Node.csproj" />
+    <ProjectReference Include="..\Libs\ASF.Node.Net\ASF.Node.Net.csproj" />
+  </ItemGroup>
+    
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+</Project>
