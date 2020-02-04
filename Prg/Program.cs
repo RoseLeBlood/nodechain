@@ -13,7 +13,7 @@ namespace nodechain
             for(int i = 0; i < 10; i++)
                 chain.Add(new SHA512SiblingBlockEntry<Int32>(i));
 
-            Console.WriteLine("[\n{0}\n]", chain.ToString());
+            Console.WriteLine("Test [\n{0}\n]", chain.ToString());
         }
     }
 }
