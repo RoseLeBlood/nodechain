@@ -23,8 +23,8 @@ using ASF.Node.Block;
 
 namespace ASF.Node.Net {
     public class ClientBlockChain : GenericBlockChain<ClientEntry>  {
-         public ClientBlockChain (ClientEntry data, String hash) 
-            : base (data, hash) { }
+         public ClientBlockChain (ClientEntry data, String hash, Guid CreaterGuid) 
+            : base (data, hash, CreaterGuid) { }
 
         public ClientBlockChain (SHA512BlockEntry<ClientEntry> data) 
             : base (data) { }
