@@ -1,3 +1,6 @@
 [submodule "Libs/libnode"]
 	path = Libs/libnode
 	url = https://github.com/RoseLeBlood/libnode.git
+[submodule "Libs/Network"]
+	path = Libs/Network
+	url = https://github.com/Toemsel/Network.git
